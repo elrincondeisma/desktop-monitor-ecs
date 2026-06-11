@@ -7,7 +7,7 @@ App de barra de menú para macOS (Electron) que monitoriza AWS ECS en modo solo 
 Con [Homebrew](https://brew.sh):
 
 ```bash
-brew tap TU_USUARIO/tap
+brew tap elrincondeisma/tap
 brew install --cask ecs-monitor --no-quarantine
 ```
 
