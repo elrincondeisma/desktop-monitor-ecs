@@ -5,6 +5,7 @@ const ecs = require('./ecs');
 
 let tray = null;
 let win = null;
+let settingsWin = null;
 
 const DEFAULT_SHORTCUT = 'CommandOrControl+Shift+E';
 const REPO_URL = 'https://github.com/elrincondeisma/desktop-monitor-ecs';
@@ -23,8 +24,13 @@ function loadSettings() {
   }
 }
 
-function saveSettings(settings) {
-  fs.writeFileSync(settingsPath(), JSON.stringify(settings, null, 2));
+// Mergea sobre lo que hay en disco para que dos ventanas (panel y Ajustes)
+// no se pisen al guardar claves distintas. Avisa al panel para que recargue.
+function saveSettings(patch) {
+  const merged = { ...loadSettings(), ...patch };
+  fs.writeFileSync(settingsPath(), JSON.stringify(merged, null, 2));
+  if (win && !win.isDestroyed()) win.webContents.send('settings:changed', merged);
+  return merged;
 }
 
 function createWindow() {
@@ -47,8 +53,36 @@ function createWindow() {
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   win.on('blur', () => {
-    if (!win.webContents.isDevToolsOpened()) win.hide();
+    if (win.webContents.isDevToolsOpened()) return;
+    // No ocultar el panel mientras la ventana de Ajustes tiene el foco
+    if (settingsWin && !settingsWin.isDestroyed() && settingsWin.isVisible()) return;
+    win.hide();
   });
+}
+
+function openSettings() {
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    settingsWin.show();
+    settingsWin.focus();
+    return;
+  }
+  settingsWin = new BrowserWindow({
+    width: 380,
+    height: 500,
+    resizable: false,
+    fullscreenable: false,
+    minimizable: false,
+    maximizable: false,
+    title: 'Ajustes',
+    skipTaskbar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
+  settingsWin.on('closed', () => { settingsWin = null; });
 }
 
 function positionWindow() {
@@ -80,14 +114,7 @@ function createTray() {
       Menu.buildFromTemplate([
         { label: `Abrir/cerrar (${(loadSettings().shortcut || DEFAULT_SHORTCUT).replace('CommandOrControl', '⌘').replace('Shift', '⇧').replace(/\+/g, '')})`, click: toggleWindow },
         { type: 'separator' },
-        {
-          label: 'Arrancar al iniciar sesión',
-          type: 'checkbox',
-          checked: app.getLoginItemSettings().openAtLogin,
-          // En desarrollo registraría el binario de Electron, no la app
-          enabled: app.isPackaged,
-          click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
-        },
+        { label: 'Ajustes…', click: openSettings },
         { label: 'Acerca de ECS Monitor', click: () => app.showAboutPanel() },
         { type: 'separator' },
         { label: 'Salir', click: () => app.quit() },
@@ -114,7 +141,7 @@ if (!gotLock) {
   });
 }
 
-// Atajo global para abrir/cerrar el panel. Editable en settings.json
+// Atajo global para abrir/cerrar el panel. Editable desde Ajustes
 // (clave "shortcut", formato de aceleradores de Electron).
 function registerShortcut() {
   const shortcut = loadSettings().shortcut || DEFAULT_SHORTCUT;
@@ -123,6 +150,25 @@ function registerShortcut() {
     if (!ok) console.warn(`Atajo ${shortcut} ya está en uso por otra app`);
   } catch (err) {
     console.warn(`Atajo ${shortcut} inválido: ${err.message}`);
+  }
+}
+
+// Cambia el atajo desde Ajustes: registra el nuevo, y si falla revierte al
+// anterior. Solo persiste si el registro tuvo éxito.
+function setShortcut(accel) {
+  const next = accel || DEFAULT_SHORTCUT;
+  const prev = loadSettings().shortcut || DEFAULT_SHORTCUT;
+  globalShortcut.unregisterAll();
+  try {
+    if (!globalShortcut.register(next, toggleWindow)) {
+      globalShortcut.register(prev, toggleWindow);
+      return { ok: false, error: 'El atajo ya está en uso por otra app' };
+    }
+    saveSettings({ shortcut: next });
+    return { ok: true, shortcut: next };
+  } catch (err) {
+    try { globalShortcut.register(prev, toggleWindow); } catch { /* noop */ }
+    return { ok: false, error: `Atajo inválido: ${err.message}` };
   }
 }
 
@@ -181,6 +227,18 @@ ipcMain.on('app:openExternal', (_e, url) => {
 });
 ipcMain.handle('settings:load', () => loadSettings());
 ipcMain.handle('settings:save', (_e, settings) => saveSettings(settings));
+ipcMain.on('settings:open', openSettings);
+ipcMain.handle('shortcut:set', (_e, accel) => setShortcut(accel));
+ipcMain.handle('shortcut:default', () => DEFAULT_SHORTCUT);
+ipcMain.handle('loginItem:get', () => ({
+  // En desarrollo registraría el binario de Electron, no la app
+  enabled: app.isPackaged,
+  openAtLogin: app.getLoginItemSettings().openAtLogin,
+}));
+ipcMain.handle('loginItem:set', (_e, value) => {
+  app.setLoginItemSettings({ openAtLogin: !!value });
+  return app.getLoginItemSettings().openAtLogin;
+});
 ipcMain.on('tray:title', (_e, title) => {
   if (tray) tray.setTitle(title || '', { fontType: 'monospacedDigit' });
 });

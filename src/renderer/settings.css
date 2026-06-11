@@ -1,0 +1,71 @@
+/* Ventana de Ajustes: frame nativo, sin las esquinas redondeadas del panel */
+body.settings {
+  border-radius: 0;
+  overflow: auto;
+  display: block;
+}
+
+.settings-body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settings-body section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-body h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-dim);
+  font-weight: 600;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.field select { min-width: 110px; }
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.check.master { font-weight: 600; }
+.check input { cursor: pointer; }
+
+.indent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 20px;
+}
+.indent.disabled { opacity: 0.4; }
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hint { color: var(--fg-dim); font-size: 11px; }
+.hint.hidden { display: none; }
+
+.shortcut-input {
+  min-width: 130px;
+  text-align: center;
+  font-weight: 600;
+}
+.shortcut-input.recording {
+  border-color: var(--blue);
+  color: var(--blue);
+}

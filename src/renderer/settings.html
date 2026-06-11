@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'" />
+  <title>Ajustes</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body class="settings">
+  <main class="settings-body">
+    <section>
+      <h2>Refresco</h2>
+      <label class="field">
+        <span>Intervalo</span>
+        <select id="interval">
+          <option value="15000">15s</option>
+          <option value="30000">30s</option>
+          <option value="60000">60s</option>
+          <option value="0">Manual</option>
+        </select>
+      </label>
+    </section>
+
+    <section>
+      <h2>Atajo global</h2>
+      <label class="field">
+        <span>Abrir/cerrar panel</span>
+        <button id="shortcut" class="shortcut-input" type="button">—</button>
+      </label>
+      <div class="row-actions">
+        <button id="shortcut-reset" type="button">Restablecer</button>
+        <span id="shortcut-hint" class="hint"></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Inicio</h2>
+      <label class="check"><input type="checkbox" id="login-item" /> <span>Arrancar al iniciar sesión</span></label>
+      <p id="login-hint" class="hint hidden">Disponible solo en la app instalada.</p>
+    </section>
+
+    <section>
+      <h2>Notificaciones</h2>
+      <label class="check master"><input type="checkbox" id="notify-all" /> <span>Todas las notificaciones</span></label>
+      <div id="notify-events" class="indent">
+        <label class="check"><input type="checkbox" data-event="created" /> <span>Tareas nuevas</span></label>
+        <label class="check"><input type="checkbox" data-event="destroyed" /> <span>Tareas destruidas</span></label>
+      </div>
+      <p class="hint">Solo se notifican cambios en tus favoritos.</p>
+    </section>
+  </main>
+  <script src="settings.js"></script>
+</body>
+</html>

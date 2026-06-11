@@ -51,7 +51,6 @@ select, button { cursor: pointer; }
 select#profile { flex: 1; min-width: 0; }
 button:hover { background: var(--bg-row); }
 button#quit { color: var(--fg-dim); }
-button#notify.off { opacity: 0.4; }
 
 .tabs {
   display: flex;

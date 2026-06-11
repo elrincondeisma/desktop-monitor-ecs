@@ -110,8 +110,14 @@ function starBtn(cluster, service = null) {
 
 // --- Diff de tareas (creadas / destruidas) ---
 
-function maybeNotify(title, body, cluster, service) {
+function notifyEventEnabled(kind) {
+  const ev = settings.notifyEvents || {};
+  return ev[kind] !== false;
+}
+
+function maybeNotify(kind, title, body, cluster, service) {
   if (settings.notify === false) return;
+  if (!notifyEventEnabled(kind)) return;
   if (!currentFavs().length || !inFavScope(cluster, service)) return;
   new Notification(title, { body });
 }
@@ -132,7 +138,7 @@ function diffState(newState) {
           cluster: t.cluster, service: t.serviceName, id: t.id, detail: t.taskDef,
         });
         recentNew.set(arn, Date.now());
-        maybeNotify('Nueva tarea ECS', `${t.cluster} / ${t.serviceName || t.group}: ${t.id} (${t.taskDef || ''})`, t.cluster, t.serviceName);
+        maybeNotify('created', 'Nueva tarea ECS', `${t.cluster} / ${t.serviceName || t.group}: ${t.id} (${t.taskDef || ''})`, t.cluster, t.serviceName);
       }
     }
     for (const [arn, t] of prevTasks) {
@@ -145,7 +151,7 @@ function diffState(newState) {
           cluster: t.cluster, service: t.serviceName, id: t.id,
           detail: reason || t.taskDef,
         });
-        maybeNotify('Tarea ECS destruida', `${t.cluster} / ${t.serviceName || t.group}: ${t.id}${reason ? ` — ${reason}` : ''}`, t.cluster, t.serviceName);
+        maybeNotify('destroyed', 'Tarea ECS destruida', `${t.cluster} / ${t.serviceName || t.group}: ${t.id}${reason ? ` — ${reason}` : ''}`, t.cluster, t.serviceName);
       }
     }
     if (events.length > MAX_EVENTS) events.length = MAX_EVENTS;
@@ -430,7 +436,7 @@ async function refresh() {
 
 function scheduleRefresh() {
   if (timer) clearInterval(timer);
-  const ms = Number($('#interval').value);
+  const ms = Number(settings.interval ?? 30000);
   if (ms > 0) timer = setInterval(refresh, ms);
 }
 
@@ -439,16 +445,9 @@ async function persistSettings() {
     ...settings,
     profile: $('#profile').value,
     region: $('#region').value,
-    interval: $('#interval').value,
     favorites,
   };
   await window.api.saveSettings(settings);
-}
-
-function updateNotifyBtn() {
-  const on = settings.notify !== false;
-  $('#notify').textContent = on ? '🔔' : '🔕';
-  $('#notify').classList.toggle('off', !on);
 }
 
 // --- Aviso de versión nueva ---
@@ -496,9 +495,6 @@ async function init() {
   });
   const profileRegion = profiles.find((p) => p.name === profileSel.value)?.region;
   regionSel.value = settings.region || profileRegion || 'eu-west-1';
-  if (settings.interval != null) $('#interval').value = settings.interval;
-  updateNotifyBtn();
-
   profileSel.addEventListener('change', () => {
     const pr = profiles.find((p) => p.name === profileSel.value)?.region;
     if (pr) regionSel.value = pr;
@@ -515,13 +511,8 @@ async function init() {
     renderAll();
     refresh();
   });
-  $('#interval').addEventListener('change', () => { persistSettings(); scheduleRefresh(); });
   $('#refresh').addEventListener('click', refresh);
-  $('#notify').addEventListener('click', () => {
-    settings.notify = settings.notify === false;
-    updateNotifyBtn();
-    persistSettings();
-  });
+  $('#settings').addEventListener('click', () => window.api.openSettings());
   $('#quit').addEventListener('click', () => window.api.quit());
   $('#filter').addEventListener('input', renderClustersTab);
   document.querySelectorAll('.tab-btn').forEach((b) => {
@@ -531,6 +522,11 @@ async function init() {
     if (e.key === 'Escape') window.api.hideWindow();
   });
   window.api.onShown(refresh);
+  window.api.onSettingsChanged((s) => {
+    settings = s || {};
+    favorites = Array.isArray(settings.favorites) ? settings.favorites : favorites;
+    scheduleRefresh();
+  });
 
   window.api.getVersion().then((v) => { $('#version').textContent = `v${v}`; });
 
