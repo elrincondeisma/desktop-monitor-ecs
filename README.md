@@ -56,11 +56,13 @@ Los favoritos se guardan por perfil y región. El botón 🔔 activa/desactiva l
 
 La app se distribuye gratis y sin certificado de Apple: GitHub Releases + tap de Homebrew.
 
-1. **Publicar una versión**: sube la versión en `package.json`, haz commit y crea un tag:
+1. **Publicar una versión** (un solo comando, requiere working tree limpio):
    ```bash
-   git tag v0.2.0 && git push origin main --tags
+   npm run release         # 0.1.0 -> 0.1.1 (bugfixes)
+   npm run release:minor   # 0.1.0 -> 0.2.0 (funcionalidad nueva)
+   npm run release:major   # 0.1.0 -> 1.0.0 (cambios grandes)
    ```
-   GitHub Actions (`.github/workflows/release.yml`) construye el `.dmg` y `.zip` universales (Intel + Apple Silicon, sin firma) y los publica en Releases.
+   Esto sube la versión en `package.json`, commitea, crea el tag y lo pushea. GitHub Actions (`.github/workflows/release.yml`) construye el `.dmg` y `.zip` universales (Intel + Apple Silicon, sin firma) y los publica en Releases.
 
 2. **El tap se actualiza solo**: al terminar el build, el workflow envía un `repository_dispatch` a `elrincondeisma/homebrew-tap` con la versión y el sha256, y el workflow del tap actualiza `Casks/ecs-monitor.rb`. Requiere el secret `TAP_TOKEN` en este repo (el mismo PAT que usa keypet). Si falta el secret, se puede actualizar a mano: `shasum -a 256 ECSMonitor-X.Y.Z-universal.zip` y editar versión y sha en el cask.
 
