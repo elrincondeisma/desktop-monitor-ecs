@@ -8,6 +8,7 @@ Con [Homebrew](https://brew.sh):
 
 ```bash
 brew tap elrincondeisma/tap
+brew trust elrincondeisma/tap   # Homebrew moderno lo exige para taps de terceros
 brew install --cask ecs-monitor
 ```
 
