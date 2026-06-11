@@ -516,6 +516,8 @@ async function init() {
   });
   window.api.onShown(refresh);
 
+  window.api.getVersion().then((v) => { $('#version').textContent = `v${v}`; });
+
   setTab(settings.activeTab || (favorites.length ? 'favorites' : 'clusters'));
   scheduleRefresh();
   refresh();

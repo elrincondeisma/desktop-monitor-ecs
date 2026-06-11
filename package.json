@@ -2,7 +2,7 @@
   "name": "desktop-monitor-ecs",
   "version": "0.1.0",
   "description": "Monitor de AWS ECS en la barra de menú: clusters, servicios, tareas e instancias",
-  "author": "Smile and Learn <smileandlearndigitalcreations@gmail.com>",
+  "author": "Ismael Catala <ismael@elrincondeisma.com>",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -21,6 +21,7 @@
   "build": {
     "appId": "com.smileandlearn.desktopmonitorecs",
     "productName": "ECS Monitor",
+    "copyright": "© 2026 Ismael Catala",
     "directories": {
       "buildResources": "build",
       "output": "dist"

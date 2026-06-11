@@ -76,6 +76,16 @@ function createTray() {
       Menu.buildFromTemplate([
         { label: 'Abrir/cerrar', click: toggleWindow },
         { type: 'separator' },
+        {
+          label: 'Arrancar al iniciar sesión',
+          type: 'checkbox',
+          checked: app.getLoginItemSettings().openAtLogin,
+          // En desarrollo registraría el binario de Electron, no la app
+          enabled: app.isPackaged,
+          click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
+        },
+        { label: 'Acerca de ECS Monitor', click: () => app.showAboutPanel() },
+        { type: 'separator' },
         { label: 'Salir', click: () => app.quit() },
       ])
     );
@@ -88,6 +98,12 @@ if (!gotLock) {
 } else {
   app.whenReady().then(() => {
     if (process.platform === 'darwin') app.dock.hide();
+    app.setAboutPanelOptions({
+      applicationName: 'ECS Monitor',
+      applicationVersion: app.getVersion(),
+      copyright: '© 2026 Ismael Catala',
+      credits: 'Creado por Ismael Catala',
+    });
     createWindow();
     createTray();
   });
@@ -104,6 +120,7 @@ ipcMain.handle('aws:fetchState', async (_e, opts) => {
     return { error: err.message || String(err) };
   }
 });
+ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('settings:load', () => loadSettings());
 ipcMain.handle('settings:save', (_e, settings) => saveSettings(settings));
 ipcMain.on('tray:title', (_e, title) => {
