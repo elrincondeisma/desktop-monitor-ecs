@@ -1,6 +1,6 @@
 {
   "name": "desktop-monitor-ecs",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Monitor de AWS ECS en la barra de menú: clusters, servicios, tareas e instancias",
   "author": "Ismael Catala <ismael@elrincondeisma.com>",
   "main": "src/main.js",
