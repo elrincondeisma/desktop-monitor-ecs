@@ -22,11 +22,27 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Construir y publicar en GitHub Releases (sin firma)
-        run: npx electron-builder --mac --publish always
+      # Construir sin publicar: la publicación con electron-builder crea
+      # releases draft duplicadas cuando dmg y zip suben en paralelo.
+      - name: Construir (sin firma)
+        run: npx electron-builder --mac --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Publicar en GitHub Releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            "dist/ECSMonitor-${VERSION}-universal.dmg" \
+            "dist/ECSMonitor-${VERSION}-universal.zip" \
+            "dist/ECSMonitor-${VERSION}-universal.dmg.blockmap" \
+            "dist/ECSMonitor-${VERSION}-universal.zip.blockmap" \
+            "dist/latest-mac.yml"
 
       # Avisa al tap de Homebrew para que actualice el cask con la nueva
       # versión y sha256. Requiere el secret TAP_TOKEN (PAT con permiso de
