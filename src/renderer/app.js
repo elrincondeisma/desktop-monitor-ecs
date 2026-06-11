@@ -451,6 +451,22 @@ function updateNotifyBtn() {
   $('#notify').classList.toggle('off', !on);
 }
 
+// --- Aviso de versión nueva ---
+
+async function checkForUpdate() {
+  const update = await window.api.checkUpdate();
+  const banner = $('#update-banner');
+  if (!update) {
+    banner.classList.add('hidden');
+    return;
+  }
+  banner.innerHTML = '';
+  banner.append(`⬆ Versión v${update.latest} disponible`);
+  banner.append(el('span', 'sub', 'brew upgrade --cask ecs-monitor · clic para ver las novedades'));
+  banner.onclick = () => window.api.openExternal(update.url);
+  banner.classList.remove('hidden');
+}
+
 // --- Init ---
 
 async function init() {
@@ -517,6 +533,9 @@ async function init() {
   window.api.onShown(refresh);
 
   window.api.getVersion().then((v) => { $('#version').textContent = `v${v}`; });
+
+  checkForUpdate();
+  setInterval(checkForUpdate, 6 * 60 * 60 * 1000);
 
   setTab(settings.activeTab || (favorites.length ? 'favorites' : 'clusters'));
   scheduleRefresh();

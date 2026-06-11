@@ -221,6 +221,21 @@ details.stopped[open] summary::before { content: '▾ '; }
 .activity .row.event { border-top: none; border-bottom: 1px solid var(--border); }
 .activity .row.event:last-child { border-bottom: none; }
 
+#update-banner {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  text-align: left;
+  background: rgba(90, 156, 245, 0.12);
+  border: 1px solid rgba(90, 156, 245, 0.4);
+  color: var(--blue);
+  font-weight: 600;
+}
+
+#update-banner:hover { background: rgba(90, 156, 245, 0.2); }
+#update-banner .sub { display: block; font-weight: 400; color: var(--fg-dim); font-size: 10px; }
+
 .activity-box {
   background: var(--bg-card);
   border: 1px solid var(--border);

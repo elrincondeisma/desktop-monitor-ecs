@@ -2,6 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   getVersion: () => ipcRenderer.invoke('app:version'),
+  checkUpdate: () => ipcRenderer.invoke('app:checkUpdate'),
+  openExternal: (url) => ipcRenderer.send('app:openExternal', url),
   listProfiles: () => ipcRenderer.invoke('aws:listProfiles'),
   fetchState: (opts) => ipcRenderer.invoke('aws:fetchState', opts),
   loadSettings: () => ipcRenderer.invoke('settings:load'),

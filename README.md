@@ -29,8 +29,9 @@ npm start
 
 Aparece un icono en la barra de menú:
 
-- **Clic izquierdo**: abre/cierra el panel de estado
-- **Clic derecho**: menú con opción de salir
+- **Clic izquierdo** (o **⌘⇧E** desde cualquier app): abre/cierra el panel de estado
+- **Clic derecho**: menú con Acerca de, arranque al iniciar sesión y salir
+- Si hay una versión nueva publicada, el panel muestra un aviso con un clic a las novedades (el atajo se puede cambiar con la clave `shortcut` en `~/Library/Application Support/desktop-monitor-ecs/settings.json`)
 - El icono muestra `⟳N` cuando hay N despliegues o tareas en transición (solo de tus favoritos si tienes alguno), y `!` si hay error de conexión
 
 En el panel eliges perfil AWS, región e intervalo de refresco (15s/30s/60s/manual). La selección se guarda entre sesiones.

@@ -1,10 +1,14 @@
-const { app, Tray, BrowserWindow, Menu, ipcMain, nativeImage } = require('electron');
+const { app, Tray, BrowserWindow, Menu, ipcMain, nativeImage, globalShortcut, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const ecs = require('./ecs');
 
 let tray = null;
 let win = null;
+
+const DEFAULT_SHORTCUT = 'CommandOrControl+Shift+E';
+const REPO_URL = 'https://github.com/elrincondeisma/desktop-monitor-ecs';
+let updateCache = { checkedAt: 0, result: null };
 
 const WIN_WIDTH = 440;
 const WIN_HEIGHT = 580;
@@ -74,7 +78,7 @@ function createTray() {
   tray.on('right-click', () => {
     tray.popUpContextMenu(
       Menu.buildFromTemplate([
-        { label: 'Abrir/cerrar', click: toggleWindow },
+        { label: `Abrir/cerrar (${(loadSettings().shortcut || DEFAULT_SHORTCUT).replace('CommandOrControl', '⌘').replace('Shift', '⇧').replace(/\+/g, '')})`, click: toggleWindow },
         { type: 'separator' },
         {
           label: 'Arrancar al iniciar sesión',
@@ -106,7 +110,57 @@ if (!gotLock) {
     });
     createWindow();
     createTray();
+    registerShortcut();
   });
+}
+
+// Atajo global para abrir/cerrar el panel. Editable en settings.json
+// (clave "shortcut", formato de aceleradores de Electron).
+function registerShortcut() {
+  const shortcut = loadSettings().shortcut || DEFAULT_SHORTCUT;
+  try {
+    const ok = globalShortcut.register(shortcut, toggleWindow);
+    if (!ok) console.warn(`Atajo ${shortcut} ya está en uso por otra app`);
+  } catch (err) {
+    console.warn(`Atajo ${shortcut} inválido: ${err.message}`);
+  }
+}
+
+app.on('will-quit', () => globalShortcut.unregisterAll());
+
+function isNewerVersion(latest, current) {
+  const a = latest.split('.').map(Number);
+  const b = current.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((a[i] || 0) > (b[i] || 0)) return true;
+    if ((a[i] || 0) < (b[i] || 0)) return false;
+  }
+  return false;
+}
+
+async function checkUpdate() {
+  // Cache de 1h: el endpoint sin auth tiene límite de 60 peticiones/h por IP
+  if (Date.now() - updateCache.checkedAt < 60 * 60 * 1000) return updateCache.result;
+  try {
+    const res = await fetch(
+      'https://api.github.com/repos/elrincondeisma/desktop-monitor-ecs/releases/latest',
+      { headers: { Accept: 'application/vnd.github+json' } }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const release = await res.json();
+    const latest = (release.tag_name || '').replace(/^v/, '');
+    const current = app.getVersion();
+    updateCache = {
+      checkedAt: Date.now(),
+      result: latest && isNewerVersion(latest, current)
+        ? { latest, current, url: release.html_url }
+        : null,
+    };
+  } catch {
+    // Sin red o rate limit: no molestar, se reintenta en la próxima ventana
+    updateCache = { checkedAt: Date.now(), result: null };
+  }
+  return updateCache.result;
 }
 
 app.on('window-all-closed', (e) => e.preventDefault());
@@ -121,6 +175,10 @@ ipcMain.handle('aws:fetchState', async (_e, opts) => {
   }
 });
 ipcMain.handle('app:version', () => app.getVersion());
+ipcMain.handle('app:checkUpdate', () => checkUpdate());
+ipcMain.on('app:openExternal', (_e, url) => {
+  if (typeof url === 'string' && url.startsWith(REPO_URL)) shell.openExternal(url);
+});
 ipcMain.handle('settings:load', () => loadSettings());
 ipcMain.handle('settings:save', (_e, settings) => saveSettings(settings));
 ipcMain.on('tray:title', (_e, title) => {
