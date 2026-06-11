@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'" />
+  <title>Monitor ECS</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="controls">
+      <select id="profile" title="Perfil AWS"></select>
+      <select id="region" title="Región"></select>
+      <select id="interval" title="Intervalo de refresco">
+        <option value="15000">15s</option>
+        <option value="30000" selected>30s</option>
+        <option value="60000">60s</option>
+        <option value="0">Manual</option>
+      </select>
+      <button id="refresh" title="Refrescar ahora">⟳</button>
+      <button id="notify" title="Notificaciones de cambios en favoritos">🔔</button>
+      <button id="quit" title="Salir de la aplicación">✕</button>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn" data-tab="favorites">★ Favoritos</button>
+      <button class="tab-btn" data-tab="clusters">Clusters</button>
+      <div class="statusbar">
+        <span id="spinner" class="hidden">cargando…</span>
+        <span id="last-updated">—</span>
+      </div>
+    </nav>
+  </header>
+  <main>
+    <div id="tab-favorites" class="tab hidden"></div>
+    <div id="tab-clusters" class="tab hidden">
+      <input id="filter" type="search" placeholder="Filtrar clusters o servicios…" spellcheck="false" />
+      <div id="clusters-list"></div>
+    </div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
