@@ -27,3 +27,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      # Avisa al tap de Homebrew para que actualice el cask con la nueva
+      # versión y sha256. Requiere el secret TAP_TOKEN (PAT con permiso de
+      # escritura en elrincondeisma/homebrew-tap); si falta, se omite.
+      - name: Actualizar cask en homebrew-tap
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+        run: |
+          if [ -z "$TAP_TOKEN" ]; then
+            echo "TAP_TOKEN no configurado; omito la actualización del cask"
+            exit 0
+          fi
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA256=$(shasum -a 256 "dist/ECSMonitor-${VERSION}-universal.zip" | cut -d' ' -f1)
+          curl -sf -X POST \
+            -H "Authorization: Bearer $TAP_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/elrincondeisma/homebrew-tap/dispatches \
+            -d "{\"event_type\":\"update-ecs-monitor-cask\",\"client_payload\":{\"version\":\"$VERSION\",\"sha256_universal\":\"$SHA256\"}}"

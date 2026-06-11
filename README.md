@@ -8,10 +8,10 @@ Con [Homebrew](https://brew.sh):
 
 ```bash
 brew tap elrincondeisma/tap
-brew install --cask ecs-monitor --no-quarantine
+brew install --cask ecs-monitor
 ```
 
-> `--no-quarantine` es necesario porque la app no está firmada con certificado de Apple. Alternativamente, descarga el `.dmg` de [Releases](../../releases) y tras moverla a Aplicaciones ejecuta `xattr -cr "/Applications/ECS Monitor.app"`.
+> La app no está firmada con certificado de Apple; el cask elimina la cuarentena automáticamente al instalar. Si en su lugar descargas el `.dmg` de [Releases](../../releases), tras moverla a Aplicaciones ejecuta `xattr -cr "/Applications/ECS Monitor.app"`.
 
 ## Requisitos
 
@@ -61,10 +61,7 @@ La app se distribuye gratis y sin certificado de Apple: GitHub Releases + tap de
    ```
    GitHub Actions (`.github/workflows/release.yml`) construye el `.dmg` y `.zip` universales (Intel + Apple Silicon, sin firma) y los publica en Releases.
 
-2. **Actualizar el tap de Homebrew**: en tu repo `homebrew-tap`, edita `Casks/ecs-monitor.rb` (plantilla en `packaging/homebrew/`) con la nueva `version` y el `sha256` del zip:
-   ```bash
-   shasum -a 256 ECSMonitor-0.2.0-universal.zip
-   ```
+2. **El tap se actualiza solo**: al terminar el build, el workflow envía un `repository_dispatch` a `elrincondeisma/homebrew-tap` con la versión y el sha256, y el workflow del tap actualiza `Casks/ecs-monitor.rb`. Requiere el secret `TAP_TOKEN` en este repo (el mismo PAT que usa keypet). Si falta el secret, se puede actualizar a mano: `shasum -a 256 ECSMonitor-X.Y.Z-universal.zip` y editar versión y sha en el cask.
 
 Build local de prueba: `npm run pack` (genera `dist/mac-arm64/ECS Monitor.app` sin empaquetar). Build completo: `npm run dist`.
 
