@@ -41,6 +41,7 @@ function createWindow() {
     minHeight: 420,
     show: false,
     frame: false,
+    backgroundColor: '#1e1f24', // evita el flash blanco al mostrar la ventana
     resizable: true,
     fullscreenable: false,
     skipTaskbar: true,
@@ -75,6 +76,7 @@ function openSettings() {
     maximizable: false,
     title: 'Ajustes',
     skipTaskbar: true,
+    backgroundColor: '#1e1f24',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
