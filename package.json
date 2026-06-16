@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ecs": "^3.700.0",
+    "@aws-sdk/client-s3": "^3.1069.0",
     "@aws-sdk/credential-providers": "^3.700.0",
     "@aws-sdk/shared-ini-file-loader": "^3.374.0"
   }

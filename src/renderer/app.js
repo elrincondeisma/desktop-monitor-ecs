@@ -371,6 +371,177 @@ function renderFavoritesTab() {
   root.append(section);
 }
 
+// --- Pestaña Secrets (buckets *-env, SOLO LECTURA) ---
+//
+// Independiente del ciclo de refresco de ECS: se carga bajo demanda al entrar
+// en la pestaña. Navegación en 3 niveles: buckets -> ficheros -> visor.
+
+let envView = { level: 'buckets', bucket: null, region: null, key: null };
+let envBuckets = null;  // null = aún no cargados
+let envObjects = null;  // ficheros del bucket actual
+let envFile = null;     // contenido del fichero abierto
+let envError = null;
+let envLoading = false;
+
+function resetEnv() {
+  envView = { level: 'buckets', bucket: null, region: null, key: null };
+  envBuckets = null;
+  envObjects = null;
+  envFile = null;
+  envError = null;
+}
+
+async function ensureEnvBuckets() {
+  if (envBuckets || envLoading) return;
+  await loadEnvBuckets();
+}
+
+async function loadEnvBuckets() {
+  const { profile, region } = ctx();
+  if (!profile) { envError = 'Selecciona un perfil AWS.'; renderEnvTab(); return; }
+  envLoading = true; envError = null; renderEnvTab();
+  try {
+    const res = await window.api.s3ListBuckets({ profile, region });
+    if (res.error) { envError = res.error; envBuckets = null; }
+    else { envBuckets = res.buckets; envError = null; }
+  } finally {
+    envLoading = false;
+    renderEnvTab();
+  }
+}
+
+async function openEnvBucket(bucket) {
+  envView = { level: 'objects', bucket: bucket.name, region: bucket.region, key: null };
+  envObjects = null; envError = null; envLoading = true; renderEnvTab();
+  const { profile } = ctx();
+  try {
+    const res = await window.api.s3ListObjects({ profile, bucket: bucket.name, region: bucket.region });
+    if (res.error) { envError = res.error; envObjects = null; }
+    else { envObjects = res.objects; envError = null; }
+  } finally {
+    envLoading = false;
+    renderEnvTab();
+  }
+}
+
+async function openEnvFile(key) {
+  envView = { ...envView, level: 'file', key };
+  envFile = null; envError = null; envLoading = true; renderEnvTab();
+  const { profile } = ctx();
+  try {
+    const res = await window.api.s3GetObject({ profile, bucket: envView.bucket, key, region: envView.region });
+    if (res.error) { envError = res.error; envFile = null; }
+    else { envFile = res; envError = null; }
+  } finally {
+    envLoading = false;
+    renderEnvTab();
+  }
+}
+
+function envBack() {
+  if (envView.level === 'file') {
+    envView = { ...envView, level: 'objects', key: null };
+    envFile = null; envError = null;
+    renderEnvTab();
+  } else if (envView.level === 'objects') {
+    envView = { level: 'buckets', bucket: null, region: null, key: null };
+    envObjects = null; envError = null;
+    renderEnvTab();
+  }
+}
+
+function fmtSize(bytes) {
+  if (bytes == null) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function envBackBtn(label) {
+  const btn = el('button', 'env-back', `← ${label}`);
+  btn.addEventListener('click', envBack);
+  return btn;
+}
+
+function renderEnvBuckets(root) {
+  root.append(el('p', 'env-note', '🔒 Solo lectura · buckets que terminan en «-env» con los .env por entorno'));
+  if (envError) { root.append(el('p', 'error', `Error: ${envError}`)); return; }
+  if (envLoading && !envBuckets) { root.append(el('p', 'empty', 'Cargando buckets…')); return; }
+  if (!envBuckets) { root.append(el('p', 'empty', 'Cargando buckets…')); return; }
+  if (!envBuckets.length) {
+    root.append(el('p', 'empty', 'No hay buckets que terminen en «-env» en esta cuenta.'));
+    return;
+  }
+  for (const b of envBuckets) {
+    const row = el('div', 'row env-item');
+    row.append(el('span', 'dot blue'));
+    const name = el('span', 'name', b.name);
+    name.append(el('span', 'sub', `${b.region}${b.createdAt ? ` · creado ${new Date(b.createdAt).toLocaleDateString()}` : ''}`));
+    row.append(name);
+    row.append(el('span', 'counts', '›'));
+    row.addEventListener('click', () => openEnvBucket(b));
+    root.append(row);
+  }
+}
+
+function renderEnvObjects(root) {
+  root.append(envBackBtn('Buckets'));
+  root.append(el('div', 'section-title', envView.bucket));
+  if (envError) { root.append(el('p', 'error', `Error: ${envError}`)); return; }
+  if (envLoading && !envObjects) { root.append(el('p', 'empty', 'Cargando ficheros…')); return; }
+  if (!envObjects || !envObjects.length) {
+    root.append(el('p', 'empty', 'Este bucket no tiene ficheros.'));
+    return;
+  }
+  for (const o of envObjects) {
+    const row = el('div', 'row env-item');
+    row.append(el('span', 'dot gray'));
+    const name = el('span', 'name', o.key);
+    if (o.lastModified) name.append(el('span', 'sub', `modif. ${new Date(o.lastModified).toLocaleString()}`));
+    row.append(name);
+    row.append(el('span', 'counts', fmtSize(o.size)));
+    row.addEventListener('click', () => openEnvFile(o.key));
+    root.append(row);
+  }
+}
+
+function renderEnvFile(root) {
+  root.append(envBackBtn(envView.bucket));
+  const head = el('div', 'env-file-head');
+  head.append(el('span', 'name', envView.key));
+  if (envFile) {
+    const copy = el('button', 'env-copy', 'Copiar');
+    copy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(envFile.body);
+        copy.textContent = 'Copiado ✓';
+        setTimeout(() => { copy.textContent = 'Copiar'; }, 1500);
+      } catch {
+        copy.textContent = 'Error';
+      }
+    });
+    head.append(copy);
+  }
+  root.append(head);
+  if (envFile) {
+    root.append(el('div', 'section-title', `${fmtSize(envFile.size)}${envFile.lastModified ? ` · modif. ${new Date(envFile.lastModified).toLocaleString()}` : ''}`));
+  }
+  if (envError) { root.append(el('p', 'error', `Error: ${envError}`)); return; }
+  if (envLoading && !envFile) { root.append(el('p', 'empty', 'Cargando fichero…')); return; }
+  if (!envFile) { root.append(el('p', 'empty', 'Cargando fichero…')); return; }
+  const pre = el('pre', 'env-viewer');
+  pre.textContent = envFile.body;
+  root.append(pre);
+}
+
+function renderEnvTab() {
+  const root = $('#tab-env');
+  root.innerHTML = '';
+  if (envView.level === 'file') return renderEnvFile(root);
+  if (envView.level === 'objects') return renderEnvObjects(root);
+  return renderEnvBuckets(root);
+}
+
 // --- Pestañas / render global ---
 
 function setTab(tab) {
@@ -378,8 +549,10 @@ function setTab(tab) {
   document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   $('#tab-favorites').classList.toggle('hidden', tab !== 'favorites');
   $('#tab-clusters').classList.toggle('hidden', tab !== 'clusters');
+  $('#tab-env').classList.toggle('hidden', tab !== 'env');
   settings.activeTab = tab;
   persistSettings();
+  if (tab === 'env') { renderEnvTab(); ensureEnvBuckets(); }
 }
 
 function renderAll() {
@@ -499,16 +672,20 @@ async function init() {
     const pr = profiles.find((p) => p.name === profileSel.value)?.region;
     if (pr) regionSel.value = pr;
     resetDiff();
+    resetEnv();
     state = null;
     persistSettings();
     renderAll();
+    if (activeTab === 'env') ensureEnvBuckets();
     refresh();
   });
   regionSel.addEventListener('change', () => {
     resetDiff();
+    resetEnv();
     state = null;
     persistSettings();
     renderAll();
+    if (activeTab === 'env') ensureEnvBuckets();
     refresh();
   });
   $('#refresh').addEventListener('click', refresh);

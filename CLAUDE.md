@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Este proyecto usa **Engram** como memoria persistente entre sesiones. Es la fuente de verdad del contexto que no está en el código.
 
-- **Al empezar**: busca contexto previo con `mem_search` / `mem_context` antes de actuar.
+- **SIEMPRE, ante cualquier petición**: antes de actuar consulta Engram con `mem_search` / `mem_context` para saber en qué estado está el proyecto (decisiones previas, bugs resueltos, convenciones, trabajo en curso). No respondas ni empieces a trabajar sin haber comprobado primero la memoria, aunque la petición parezca trivial. Usa palabras clave de la petición del usuario en la búsqueda.
 - **De forma proactiva** (sin esperar a que lo pidan): guarda con `mem_save` toda decisión de arquitectura, bug resuelto (con causa raíz), convención, descubrimiento o gotcha. Usa el formato **What / Why / Where / Learned** y un `topic_key` estable para hacer upsert en vez de duplicar.
 - **Antes de decir "listo"**: `mem_session_summary` con Goal / Discoveries / Accomplished / Relevant Files.
 - Nombre de proyecto en Engram: `desktopmonitorecs`.

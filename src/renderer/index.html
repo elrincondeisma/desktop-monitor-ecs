@@ -18,6 +18,7 @@
     <nav class="tabs">
       <button class="tab-btn" data-tab="favorites">★ Favoritos</button>
       <button class="tab-btn" data-tab="clusters">Clusters</button>
+      <button class="tab-btn" data-tab="env">🔑 Secrets</button>
       <div class="statusbar">
         <span id="spinner" class="hidden">cargando…</span>
         <span id="last-updated">—</span>
@@ -32,6 +33,7 @@
       <input id="filter" type="search" placeholder="Filtrar clusters o servicios…" spellcheck="false" />
       <div id="clusters-list"></div>
     </div>
+    <div id="tab-env" class="tab hidden"></div>
   </main>
   <script src="app.js"></script>
 </body>

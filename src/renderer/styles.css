@@ -241,3 +241,73 @@ details.stopped[open] summary::before { content: '▾ '; }
   border-radius: 8px;
   overflow: hidden;
 }
+
+/* --- Pestaña Secrets (buckets *-env) --- */
+
+.env-note {
+  color: var(--fg-dim);
+  font-size: 10px;
+  line-height: 1.4;
+  padding: 2px 2px 10px;
+}
+
+#tab-env .row.env-item {
+  cursor: pointer;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+#tab-env .row.env-item:hover { background: var(--bg-row); }
+#tab-env .row.env-item .counts { color: var(--fg-dim); font-size: 14px; }
+
+.env-back {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 2px 0 8px;
+  color: var(--blue);
+  font-size: 12px;
+}
+
+.env-back:hover { background: none; text-decoration: underline; }
+
+.env-file-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.env-file-head .name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.env-copy {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.env-viewer {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--fg);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  user-select: text;
+}

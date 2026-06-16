@@ -2,6 +2,7 @@ const { app, Tray, BrowserWindow, Menu, ipcMain, nativeImage, globalShortcut, sh
 const path = require('path');
 const fs = require('fs');
 const ecs = require('./ecs');
+const s3 = require('./s3');
 
 let tray = null;
 let win = null;
@@ -218,6 +219,29 @@ ipcMain.handle('aws:listProfiles', () => ecs.listProfiles());
 ipcMain.handle('aws:fetchState', async (_e, opts) => {
   try {
     return await ecs.fetchState(opts);
+  } catch (err) {
+    return { error: err.message || String(err) };
+  }
+});
+// S3 (solo lectura): buckets *-env con los .env de cada microservicio/entorno.
+// Cada handler envuelve el error para que el renderer lo muestre sin romperse.
+ipcMain.handle('s3:listBuckets', async (_e, opts) => {
+  try {
+    return { buckets: await s3.listEnvBuckets(opts) };
+  } catch (err) {
+    return { error: err.message || String(err) };
+  }
+});
+ipcMain.handle('s3:listObjects', async (_e, opts) => {
+  try {
+    return { objects: await s3.listEnvObjects(opts) };
+  } catch (err) {
+    return { error: err.message || String(err) };
+  }
+});
+ipcMain.handle('s3:getObject', async (_e, opts) => {
+  try {
+    return await s3.getEnvObject(opts);
   } catch (err) {
     return { error: err.message || String(err) };
   }
