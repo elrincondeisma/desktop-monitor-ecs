@@ -382,6 +382,7 @@ let envObjects = null;  // ficheros del bucket actual
 let envFile = null;     // contenido del fichero abierto
 let envError = null;
 let envLoading = false;
+let envFilter = '';     // texto del buscador de ficheros del bucket actual
 
 function resetEnv() {
   envView = { level: 'buckets', bucket: null, region: null, key: null };
@@ -389,6 +390,7 @@ function resetEnv() {
   envObjects = null;
   envFile = null;
   envError = null;
+  envFilter = '';
 }
 
 async function ensureEnvBuckets() {
@@ -412,7 +414,7 @@ async function loadEnvBuckets() {
 
 async function openEnvBucket(bucket) {
   envView = { level: 'objects', bucket: bucket.name, region: bucket.region, key: null };
-  envObjects = null; envError = null; envLoading = true; renderEnvTab();
+  envObjects = null; envError = null; envFilter = ''; envLoading = true; renderEnvTab();
   const { profile } = ctx();
   try {
     const res = await window.api.s3ListObjects({ profile, bucket: bucket.name, region: bucket.region });
@@ -445,7 +447,7 @@ function envBack() {
     renderEnvTab();
   } else if (envView.level === 'objects') {
     envView = { level: 'buckets', bucket: null, region: null, key: null };
-    envObjects = null; envError = null;
+    envObjects = null; envError = null; envFilter = '';
     renderEnvTab();
   }
 }
@@ -484,6 +486,24 @@ function renderEnvBuckets(root) {
   }
 }
 
+// Filtra en sitio las filas ya pintadas (sin re-render) para no perder el
+// foco del buscador al teclear; muestra un aviso si nada coincide.
+function applyEnvFilter(list) {
+  const f = envFilter.trim().toLowerCase();
+  let any = false;
+  list.querySelectorAll('.env-item').forEach((row) => {
+    const match = !f || row.dataset.key.includes(f);
+    row.classList.toggle('hidden', !match);
+    if (match) any = true;
+  });
+  let empty = list.querySelector('.env-empty');
+  if (!any) {
+    if (!empty) list.append(el('p', 'empty small env-empty', 'Ningún fichero coincide con la búsqueda.'));
+  } else if (empty) {
+    empty.remove();
+  }
+}
+
 function renderEnvObjects(root) {
   root.append(envBackBtn('Buckets'));
   root.append(el('div', 'section-title', envView.bucket));
@@ -493,16 +513,32 @@ function renderEnvObjects(root) {
     root.append(el('p', 'empty', 'Este bucket no tiene ficheros.'));
     return;
   }
+
+  const search = el('input', 'env-search');
+  search.type = 'search';
+  search.placeholder = 'Buscar fichero…';
+  search.spellcheck = false;
+  search.value = envFilter;
+  const list = el('div', 'env-list');
+  search.addEventListener('input', () => {
+    envFilter = search.value;
+    applyEnvFilter(list);
+  });
+  root.append(search);
+
   for (const o of envObjects) {
     const row = el('div', 'row env-item');
+    row.dataset.key = o.key.toLowerCase();
     row.append(el('span', 'dot gray'));
     const name = el('span', 'name', o.key);
     if (o.lastModified) name.append(el('span', 'sub', `modif. ${new Date(o.lastModified).toLocaleString()}`));
     row.append(name);
     row.append(el('span', 'counts', fmtSize(o.size)));
     row.addEventListener('click', () => openEnvFile(o.key));
-    root.append(row);
+    list.append(row);
   }
+  root.append(list);
+  applyEnvFilter(list);
 }
 
 function renderEnvFile(root) {

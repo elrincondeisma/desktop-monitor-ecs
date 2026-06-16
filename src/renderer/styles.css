@@ -263,6 +263,13 @@ details.stopped[open] summary::before { content: '▾ '; }
 #tab-env .row.env-item:hover { background: var(--bg-row); }
 #tab-env .row.env-item .counts { color: var(--fg-dim); font-size: 14px; }
 
+.env-search {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.env-search::placeholder { color: var(--fg-dim); }
+
 .env-back {
   background: none;
   border: none;
